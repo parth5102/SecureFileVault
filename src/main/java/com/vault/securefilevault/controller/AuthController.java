@@ -33,4 +33,12 @@ public class AuthController {
         response.put("token", jwt);  // ✅ Key is "token"
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/register-admin")
+    public ResponseEntity<String> registerAdmin(@RequestBody User user){
+        user.setRole("ADMIN");
+        return ResponseEntity.ok(authService.registerUser(user));
+    }
+
+
 }

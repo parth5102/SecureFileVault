@@ -15,6 +15,9 @@ public class AuthService {
 
     public String registerUser(User user){
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        if(user.getRole() == null){
+            user.setRole("USER");
+        }
         userRepository.save(user);
         return "User registered successfully!";
     }
