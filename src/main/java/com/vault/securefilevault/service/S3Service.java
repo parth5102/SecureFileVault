@@ -1,6 +1,7 @@
 package com.vault.securefilevault.service;
 
 import com.vault.securefilevault.Util.AESUtil;
+import com.vault.securefilevault.model.FileMetaData;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,7 +30,7 @@ public class S3Service {
                 .build();
     }
 
-    public String uploadFile(MultipartFile file) throws Exception {
+    public String uploadFile(MultipartFile file, String username) throws Exception {
         byte[] encrypted = AESUtil.encrypt(file.getBytes());
 
         String key = UUID.randomUUID() + "-" + file.getOriginalFilename();
@@ -40,6 +41,13 @@ public class S3Service {
                 .build();
 
         s3Client.putObject(putReq, RequestBody.fromBytes(encrypted));
+
+        FileMetaData metaData = new FileMetaData();
+        metaData.setKey(key);
+        metaData.setOriginalFilename(file.getOriginalFilename());
+        metaData.setOwnerUsername(username);
+
+
         return "File uploaded as: " + key ;
     }
 
