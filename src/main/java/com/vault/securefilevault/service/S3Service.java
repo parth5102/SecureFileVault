@@ -2,6 +2,8 @@ package com.vault.securefilevault.service;
 
 import com.vault.securefilevault.Util.AESUtil;
 import com.vault.securefilevault.model.FileMetaData;
+import com.vault.securefilevault.repository.FileMetadataRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -14,6 +16,9 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -22,6 +27,9 @@ public class S3Service {
 
     @Value("${aws.s3.bucket}")
     private String bucket;
+
+    @Autowired
+    FileMetadataRepository fileMetadataRepository;
 
     public S3Service(@Value("${aws.region}") String region){
         this.s3Client = S3Client.builder()
@@ -58,6 +66,32 @@ public class S3Service {
                 .build();
         ResponseBytes<GetObjectResponse> s3Object = s3Client.getObjectAsBytes(getReq);
         return AESUtil.decrypt(s3Object.asByteArray());
+    }
+
+    public void shareFileWithUser(String key, String owner, String targetUser){
+        Optional<FileMetaData> meta = fileMetadataRepository.findByKey(key);
+
+        if (meta.isEmpty()){
+            throw new RuntimeException("File not found with key: " + key);
+        }
+
+        FileMetaData metaData = meta.get();
+
+        if (!metaData.getOwnerUsername().equals(owner)){
+            throw new RuntimeException("only the owner can share the file.");
+        }
+        List<String> sharedUser = metaData.getSharedWith();
+        if(sharedUser == null){
+            sharedUser = new ArrayList<>();
+        }
+
+        if (!sharedUser.contains(targetUser)){
+            sharedUser.add(targetUser);
+        }
+
+        metaData.setSharedWith(sharedUser);
+        fileMetadataRepository.save(metaData);
+
     }
 
 }

@@ -3,7 +3,9 @@ package com.vault.securefilevault.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Document(collection = "files")
 public class FileMetaData {
@@ -14,6 +16,7 @@ public class FileMetaData {
     private String originalFilename;
     private String ownerUsername;
     private Date uploadAt = new Date();
+    private List<String> sharedWith = new ArrayList<>();
 
     public String getId() {
         return id;
@@ -55,6 +58,15 @@ public class FileMetaData {
         this.uploadAt = uploadAt;
     }
 
+    public List<String> getSharedWith() {
+        return sharedWith;
+    }
+
+    public void setSharedWith(List<String> sharedWith) {
+        this.sharedWith = sharedWith;
+    }
+
+
     @Override
     public String toString() {
         return "FileMetaData{" +
@@ -62,7 +74,8 @@ public class FileMetaData {
                 ", key='" + key + '\'' +
                 ", originalFilename='" + originalFilename + '\'' +
                 ", ownerUsername='" + ownerUsername + '\'' +
-                ", uploadAt=" + uploadAt +
+                ", uploadAt=" + uploadAt + '\'' +
+                ", sharedWith=" + sharedWith +
                 '}';
     }
 }
