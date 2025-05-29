@@ -16,10 +16,8 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.io.File;
+import java.util.*;
 
 @Service
 public class S3Service {
@@ -54,6 +52,8 @@ public class S3Service {
         metaData.setKey(key);
         metaData.setOriginalFilename(file.getOriginalFilename());
         metaData.setOwnerUsername(username);
+        metaData.setUploadAt(new Date());
+        fileMetadataRepository.save(metaData);
 
 
         return "File uploaded as: " + key ;
@@ -69,29 +69,20 @@ public class S3Service {
     }
 
     public void shareFileWithUser(String key, String owner, String targetUser){
-        Optional<FileMetaData> meta = fileMetadataRepository.findByKey(key);
-
-        if (meta.isEmpty()){
-            throw new RuntimeException("File not found with key: " + key);
+        Optional<FileMetaData> optionalmeta = fileMetadataRepository.findByKey(key);
+        if (optionalmeta.isPresent()){
+            FileMetaData meta = optionalmeta.get();
+            if(meta.getOwnerUsername().equals(owner)){
+                meta.getSharedWith().add(targetUser);
+                fileMetadataRepository.save(meta);
+            }
+            else {
+                throw new RuntimeException("you are not the owner of this file");
+            }
         }
-
-        FileMetaData metaData = meta.get();
-
-        if (!metaData.getOwnerUsername().equals(owner)){
-            throw new RuntimeException("only the owner can share the file.");
+        else {
+            throw new RuntimeException("File Not Found");
         }
-        List<String> sharedUser = metaData.getSharedWith();
-        if(sharedUser == null){
-            sharedUser = new ArrayList<>();
-        }
-
-        if (!sharedUser.contains(targetUser)){
-            sharedUser.add(targetUser);
-        }
-
-        metaData.setSharedWith(sharedUser);
-        fileMetadataRepository.save(metaData);
-
     }
 
 }

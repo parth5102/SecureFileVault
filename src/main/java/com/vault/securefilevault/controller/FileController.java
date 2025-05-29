@@ -2,6 +2,7 @@ package com.vault.securefilevault.controller;
 
 import com.vault.securefilevault.model.AuditLog;
 import com.vault.securefilevault.model.FileMetaData;
+import com.vault.securefilevault.model.ShareRequest;
 import com.vault.securefilevault.repository.AuditLogRepository;
 import com.vault.securefilevault.repository.FileMetadataRepository;
 import com.vault.securefilevault.service.S3Service;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -32,31 +34,40 @@ public class FileController {
     public ResponseEntity<String> upload(@RequestParam("file")MultipartFile file, Principal principal) throws Exception{
         String currentUsername = principal.getName();
         return ResponseEntity.ok(s3Service.uploadFile(file, currentUsername));
-    }
+    }   
 
-    @GetMapping("/download/{key}")
+    @GetMapping("/download/{key:.+}")
     public ResponseEntity<byte[]> download(@PathVariable String key, Principal principal) throws Exception {
+        System.out.println("🔍 Download requested for key: " + key);
+        System.out.println("👤 Principal: " + (principal != null ? principal.getName() : "null"));
 
         Optional<FileMetaData> optionalMeta = fileMetadataRepository.findByKey(key);
 
-        if (optionalMeta.isEmpty()){
+        if (optionalMeta.isEmpty()) {
+            System.out.println("❌ FileMetaData not found for key: " + key);
             return ResponseEntity.notFound().build();
         }
 
         FileMetaData meta = optionalMeta.get();
+        System.out.println("📄 FileMetaData found: " + meta);
 
-        boolean isOwner = meta.getOwnerUsername().equals(principal.getName());
-        boolean isSharedUser = meta.getSharedWith().contains(principal.getName());
+        String currentUser = principal.getName();
+        boolean isOwner = meta.getOwnerUsername().equals(currentUser);
+        List<String> sharedWith = meta.getSharedWith() != null ? meta.getSharedWith() : List.of();
+        boolean isSharedUser = sharedWith.contains(currentUser);
 
-        if (!isOwner & !isSharedUser){
+        System.out.println("🧾 isOwner: " + isOwner);
+        System.out.println("🧾 isSharedUser: " + isSharedUser);
+
+        if (!isOwner && !isSharedUser) {
+            System.out.println("⛔ Access denied for user: " + currentUser);
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
         }
-
 
         byte[] decrypted = s3Service.downloadFile(key);
 
         AuditLog log = new AuditLog();
-        log.setUsername(principal.getName());
+        log.setUsername(currentUser);
         log.setAction("DOWNLOAD");
         log.setFilename(key);
         auditLogRepository.save(log);
@@ -66,10 +77,10 @@ public class FileController {
                 .body(decrypted);
     }
 
-    @PutMapping("/share/{key}")
-    public ResponseEntity<String> shareFile(@PathVariable String key, @RequestParam String targetUser, Principal principal){
-        s3Service.shareFileWithUser(key, principal.getName(), targetUser);
-        return ResponseEntity.ok("File shared with " + targetUser);
+    @PutMapping("/share")
+    public ResponseEntity<String> shareFile(@RequestBody ShareRequest request, Principal principal){
+        s3Service.shareFileWithUser(request.getKey(), principal.getName(),request.getTargetUser());
+        return ResponseEntity.ok("File shared with " + request.getTargetUser());
     }
 
 }
