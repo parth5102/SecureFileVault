@@ -83,4 +83,10 @@ public class FileController {
         return ResponseEntity.ok("File shared with " + request.getTargetUser());
     }
 
+    @GetMapping("/my-files")
+    public ResponseEntity<List<FileMetaData>> listMyFiles(Principal principal){
+        List<FileMetaData> files = fileMetadataRepository.findByOwnerUsername(principal.getName());
+        return ResponseEntity.ok(files);
+    }
+
 }
