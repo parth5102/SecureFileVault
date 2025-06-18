@@ -5,6 +5,7 @@ import com.vault.securefilevault.model.FileMetaData;
 import com.vault.securefilevault.model.ShareRequest;
 import com.vault.securefilevault.repository.AuditLogRepository;
 import com.vault.securefilevault.repository.FileMetadataRepository;
+import com.vault.securefilevault.service.AuditLogService;
 import com.vault.securefilevault.service.S3Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -26,6 +27,9 @@ public class FileController {
 
     @Autowired
     AuditLogRepository auditLogRepository;
+
+    @Autowired
+    AuditLogService auditLogService;
 
     @Autowired
     FileMetadataRepository fileMetadataRepository;
@@ -81,6 +85,12 @@ public class FileController {
     public ResponseEntity<String> shareFile(@RequestBody ShareRequest request, Principal principal){
         s3Service.shareFileWithUser(request.getKey(), principal.getName(),request.getTargetUser());
         return ResponseEntity.ok("File shared with " + request.getTargetUser());
+    }
+
+    @GetMapping("/my-files")
+    public ResponseEntity<List<FileMetaData>> listMyFiles(Principal principal){
+        List<FileMetaData> files = fileMetadataRepository.findByOwnerUsername(principal.getName());
+        return ResponseEntity.ok(files);
     }
 
 }

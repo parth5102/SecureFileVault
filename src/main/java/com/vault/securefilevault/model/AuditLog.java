@@ -3,6 +3,7 @@ package com.vault.securefilevault.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Document(collection = "audit_log")
@@ -12,13 +13,15 @@ public class AuditLog {
     private String username;
     private String action;
     private String filename;
-    private Date timestamp = new Date();
+    private String ipAddress;
+    private LocalDateTime timestamp;
 
-    public AuditLog(String id, String username, String action, String filename, Date timestamp) {
+    public AuditLog(String id, String username, String action, String filename, String ipAddress, LocalDateTime timestamp) {
         this.id = id;
         this.username = username;
         this.action = action;
         this.filename = filename;
+        this.ipAddress = ipAddress;
         this.timestamp = timestamp;
     }
 
@@ -58,12 +61,20 @@ public class AuditLog {
         this.filename = filename;
     }
 
-    public Date getTimestamp() {
+    public LocalDateTime getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(Date timestamp) {
+    public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public String getIpAddress() {
+        return ipAddress;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
     }
 
     @Override
@@ -73,6 +84,7 @@ public class AuditLog {
                 ", username='" + username + '\'' +
                 ", action='" + action + '\'' +
                 ", filename='" + filename + '\'' +
+                ", ipAddress='" + ipAddress + '\'' +
                 ", timestamp=" + timestamp +
                 '}';
     }
