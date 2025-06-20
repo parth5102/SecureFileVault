@@ -7,14 +7,17 @@ import com.vault.securefilevault.repository.AuditLogRepository;
 import com.vault.securefilevault.repository.FileMetadataRepository;
 import com.vault.securefilevault.service.AuditLogService;
 import com.vault.securefilevault.service.S3Service;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,11 +37,14 @@ public class FileController {
     @Autowired
     FileMetadataRepository fileMetadataRepository;
 
+    @Autowired
+    private HttpServletRequest request;
+
     @PostMapping("/upload")
     public ResponseEntity<String> upload(@RequestParam("file")MultipartFile file, Principal principal) throws Exception{
         String currentUsername = principal.getName();
         return ResponseEntity.ok(s3Service.uploadFile(file, currentUsername));
-    }   
+    }
 
     @GetMapping("/download/{key:.+}")
     public ResponseEntity<byte[]> download(@PathVariable String key, Principal principal) throws Exception {
@@ -74,10 +80,12 @@ public class FileController {
         log.setUsername(currentUser);
         log.setAction("DOWNLOAD");
         log.setFilename(key);
+        log.setIpAddress(request.getRemoteAddr());
+        log.setTimestamp(LocalDateTime.now());
         auditLogRepository.save(log);
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + key + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + meta.getOriginalFilename() + "\"")
                 .body(decrypted);
     }
 
@@ -87,10 +95,39 @@ public class FileController {
         return ResponseEntity.ok("File shared with " + request.getTargetUser());
     }
 
+    @GetMapping("/shared-with-me")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public List<FileMetaData> getFilesSharedWithMe(Principal principal){
+        return fileMetadataRepository.findBySharedWithContaining(principal.getName());
+    }
+
     @GetMapping("/my-files")
     public ResponseEntity<List<FileMetaData>> listMyFiles(Principal principal){
         List<FileMetaData> files = fileMetadataRepository.findByOwnerUsername(principal.getName());
         return ResponseEntity.ok(files);
+    }
+
+    @DeleteMapping("/{key}")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<?> deleteFile(@PathVariable String key, Principal principal){
+        Optional<FileMetaData> fileOptional = fileMetadataRepository.findByKey(key);
+        if (fileOptional.isEmpty()){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("File not found");
+        }
+
+        FileMetaData fileMetaData = fileOptional.get();
+
+        if(!fileMetaData.getOwnerUsername().equals(principal.getName())){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Not authorised to delete this file");
+        }
+
+        s3Service.deleteFile(fileMetaData.getKey());
+
+        fileMetadataRepository.deleteByKey(key);
+
+        auditLogService.log(principal.getName(), "DELETE", fileMetaData.getKey(), request.getRemoteAddr());
+
+        return ResponseEntity.ok("File deleted successfully");
     }
 
 }

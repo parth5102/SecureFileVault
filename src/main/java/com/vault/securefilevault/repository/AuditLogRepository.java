@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface AuditLogRepository extends MongoRepository<AuditLog, String> {
     List<AuditLog> findByUsername(String username);
+
 }

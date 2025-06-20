@@ -44,4 +44,12 @@ public class AuditLogController {
         List<AuditLog> logs = auditLogRepository.findByUsername(username);
         return ResponseEntity.ok(logs);
     }
+
+    @GetMapping("/my-downloads")
+    public List<AuditLog> getMyDownloads(Principal principal){
+        return auditLogRepository.findByUsername(principal.getName())
+                .stream()
+                .filter(log -> "DOWNLOAD".equals(log.getAction()))
+                .toList();
+    }
 }
