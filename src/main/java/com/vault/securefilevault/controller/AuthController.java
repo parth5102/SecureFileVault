@@ -1,44 +1,41 @@
 package com.vault.securefilevault.controller;
 
 import com.vault.securefilevault.model.User;
+import com.vault.securefilevault.service.AuditLogService;
 import com.vault.securefilevault.service.AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-    @Autowired private AuthService authService;
+    private final AuthService authService;
+    private final AuditLogService auditLogService;
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@RequestBody User user){
-        String result = authService.registerUser(user);
-        Map<String, String> response = new HashMap<>();
-        response.put("message", result);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<Map<String, String>> register(@RequestBody User user) {
+        String message = authService.registerUser(user);
+        auditLogService.log("REGISTER", user.getUsername(), null, "User registered");
+        return ResponseEntity.ok(Map.of("message", message));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody User user){
-        String jwt = authService.loginUser(user);
-        Map<String, String> response = new HashMap<>();
-        response.put("token", jwt);  // ✅ Key is "token"
-        return ResponseEntity.ok(response);
+    public ResponseEntity<Map<String, String>> login(@RequestBody User user) {
+        String token = authService.loginUser(user);
+        auditLogService.log("LOGIN", user.getUsername(), null, "User logged in");
+        return ResponseEntity.ok(Map.of("token", token));
     }
 
     @PostMapping("/register-admin")
-    public ResponseEntity<String> registerAdmin(@RequestBody User user){
+    public ResponseEntity<Map<String, String>> registerAdmin(@RequestBody User user) {
         user.setRole("ADMIN");
-        return ResponseEntity.ok(authService.registerUser(user));
+        String message = authService.registerUser(user);
+        auditLogService.log("REGISTER", user.getUsername(), null, "Admin registered");
+        return ResponseEntity.ok(Map.of("message", message));
     }
-
-
 }

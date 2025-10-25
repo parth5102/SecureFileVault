@@ -3,11 +3,13 @@ package com.vault.securefilevault.service;
 import com.vault.securefilevault.model.User;
 import com.vault.securefilevault.repository.UserRepository;
 import com.vault.securefilevault.security.JwtUtil;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
     @Autowired private UserRepository userRepository;
     @Autowired private PasswordEncoder passwordEncoder;

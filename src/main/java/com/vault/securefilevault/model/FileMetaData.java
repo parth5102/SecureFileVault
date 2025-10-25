@@ -1,81 +1,28 @@
 package com.vault.securefilevault.model;
 
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.time.Instant;
+import java.util.*;
 
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 @Document(collection = "files")
 public class FileMetaData {
 
     @Id
     private String id;
-    private String key;
-    private String originalFilename;
-    private String ownerUsername;
-    private Date uploadAt = new Date();
-    private List<String> sharedWith = new ArrayList<>();
 
-    public String getId() {
-        return id;
-    }
+    private String key;           // S3 object key
+    private String owner;         // username
+    private String filename;      // original filename
+    private long sizeBytes;
+    private String contentType;   // detected on upload
+    private Instant uploadedAt;
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getKey() {
-        return key;
-    }
-
-    public void setKey(String key) {
-        this.key = key;
-    }
-
-    public String getOriginalFilename() {
-        return originalFilename;
-    }
-
-    public void setOriginalFilename(String originalFilename) {
-        this.originalFilename = originalFilename;
-    }
-
-    public String getOwnerUsername() {
-        return ownerUsername;
-    }
-
-    public void setOwnerUsername(String ownerUsername) {
-        this.ownerUsername = ownerUsername;
-    }
-
-    public Date getUploadAt() {
-        return uploadAt;
-    }
-
-    public void setUploadAt(Date uploadAt) {
-        this.uploadAt = uploadAt;
-    }
-
-    public List<String> getSharedWith() {
-        return sharedWith;
-    }
-
-    public void setSharedWith(List<String> sharedWith) {
-        this.sharedWith = sharedWith;
-    }
+    @Builder.Default
+    private Set<String> sharedWith = new HashSet<>();
 
 
-    @Override
-    public String toString() {
-        return "FileMetaData{" +
-                "id='" + id + '\'' +
-                ", key='" + key + '\'' +
-                ", originalFilename='" + originalFilename + '\'' +
-                ", ownerUsername='" + ownerUsername + '\'' +
-                ", uploadAt=" + uploadAt + '\'' +
-                ", sharedWith=" + sharedWith +
-                '}';
-    }
 }

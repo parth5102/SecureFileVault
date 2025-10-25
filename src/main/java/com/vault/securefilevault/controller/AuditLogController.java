@@ -5,12 +5,13 @@ import com.vault.securefilevault.model.User;
 import com.vault.securefilevault.repository.AuditLogRepository;
 import com.vault.securefilevault.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
@@ -51,5 +52,41 @@ public class AuditLogController {
                 .stream()
                 .filter(log -> "DOWNLOAD".equals(log.getAction()))
                 .toList();
+    }
+
+    @GetMapping("/filter")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public List<AuditLog> getFilteredLogs(
+            @RequestParam(required = false) String action,
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String filename
+    ){
+        if(action != null && username != null) {
+            return auditLogRepository.findByActionAndUsername(action, username);
+        } else if (action != null) {
+            return auditLogRepository.findByAction(action);
+        } else if (username != null) {
+            return auditLogRepository.findByUsername(username);
+        } else if (filename != null) {
+            return auditLogRepository.findByFilenameContaining(filename);
+        }else {
+            return auditLogRepository.findAll();
+        }
+    }
+
+    @GetMapping("/filter-page")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public Page<AuditLog> getFilteredLogsPaged(
+            @RequestParam(required = false) String action,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
+        if (action!= null){
+            return auditLogRepository.findByAction(action, pageable);
+        }
+        else {
+            return auditLogRepository.findAll(pageable);
+        }
     }
 }
