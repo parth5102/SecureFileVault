@@ -8,11 +8,11 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 
 public interface AuditLogRepository extends MongoRepository<AuditLog, String> {
-    List<AuditLog> findByUsername(String username);
+    List<AuditLog> findByUserName(String userName);
     List<AuditLog> findByAction(String action);
-    List<AuditLog> findByFilenameContaining(String filename);
+    List<AuditLog> findByFileNameContaining(String filename);
 
-    List<AuditLog> findByActionAndUsername(String action, String username);
+    List<AuditLog> findByActionAndUserName(String action, String userName);
 
     Page<AuditLog> findByAction(String action, Pageable pageable);
 

@@ -8,7 +8,7 @@ import java.util.Optional;
 
 public interface FileMetadataRepository extends MongoRepository<FileMetaData, String> {
     Optional<FileMetaData> findByKey(String key);
-    List<FileMetaData> findByOwnerUsername(String username);
+    List<FileMetaData> findByOwner(String owner);
     List<FileMetaData> findBySharedWithContaining(String username);
     void deleteByKey(String key);
 }

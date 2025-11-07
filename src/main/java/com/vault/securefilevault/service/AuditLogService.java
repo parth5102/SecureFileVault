@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 
 @Service
-@RequiredArgsConstructor
 public class AuditLogService {
     private final AuditLogRepository repo;
     private final HttpServletRequest request;
@@ -23,7 +22,7 @@ public class AuditLogService {
         String ip = request.getRemoteAddr(); // IPv6 (::1) kept
         repo.save(AuditLog.builder()
                 .action(action)
-                .username(username)
+                .userName(username)
                 .target(target)
                 .ip(ip)
                 .at(Instant.now())

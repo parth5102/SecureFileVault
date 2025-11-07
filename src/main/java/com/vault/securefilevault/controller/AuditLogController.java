@@ -21,72 +21,87 @@ import java.util.List;
 public class AuditLogController {
 
     @Autowired
-    AuditLogRepository auditLogRepository;
+    private AuditLogRepository auditLogRepository;
 
     @Autowired
-    UserRepository userRepository;
+    private UserRepository userRepository;
 
+    /**
+     * Fetch all logs for ADMINs, or user-specific logs for regular users.
+     */
     @GetMapping("/all")
-    public List<AuditLog> getLogs(Principal principal){
+    public ResponseEntity<List<AuditLog>> getLogs(Principal principal) {
         String username = principal.getName();
-        User user = userRepository.findByUsername(username).orElseThrow();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if ("ADMIN" .equalsIgnoreCase(user.getRole())){
-            return auditLogRepository.findAll();
-        }
-        else {
-            return auditLogRepository.findByUsername(username);
+        if ("ADMIN".equalsIgnoreCase(user.getRole())) {
+            return ResponseEntity.ok(auditLogRepository.findAll());
+        } else {
+            return ResponseEntity.ok(auditLogRepository.findByUserName(username));
         }
     }
 
+    /**
+     * ADMIN: Get logs for a specific user.
+     */
     @GetMapping("/user/{username}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<AuditLog>> getLogsByUser(@PathVariable String username){
-        List<AuditLog> logs = auditLogRepository.findByUsername(username);
+    public ResponseEntity<List<AuditLog>> getLogsByUser(@PathVariable String username) {
+        List<AuditLog> logs = auditLogRepository.findByUserName(username);
         return ResponseEntity.ok(logs);
     }
 
+    /**
+     * USER: Get only your own DOWNLOAD logs.
+     */
     @GetMapping("/my-downloads")
-    public List<AuditLog> getMyDownloads(Principal principal){
-        return auditLogRepository.findByUsername(principal.getName())
+    public ResponseEntity<List<AuditLog>> getMyDownloads(Principal principal) {
+        List<AuditLog> downloads = auditLogRepository.findByUserName(principal.getName())
                 .stream()
-                .filter(log -> "DOWNLOAD".equals(log.getAction()))
+                .filter(log -> "DOWNLOAD".equalsIgnoreCase(log.getAction()))
                 .toList();
+        return ResponseEntity.ok(downloads);
     }
 
+    /**
+     * ADMIN: Filter logs dynamically by action, username, or filename.
+     */
     @GetMapping("/filter")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public List<AuditLog> getFilteredLogs(
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<AuditLog>> getFilteredLogs(
             @RequestParam(required = false) String action,
             @RequestParam(required = false) String username,
             @RequestParam(required = false) String filename
-    ){
-        if(action != null && username != null) {
-            return auditLogRepository.findByActionAndUsername(action, username);
+    ) {
+        if (action != null && username != null) {
+            return ResponseEntity.ok(auditLogRepository.findByActionAndUserName(action, username));
         } else if (action != null) {
-            return auditLogRepository.findByAction(action);
+            return ResponseEntity.ok(auditLogRepository.findByAction(action));
         } else if (username != null) {
-            return auditLogRepository.findByUsername(username);
+            return ResponseEntity.ok(auditLogRepository.findByUserName(username));
         } else if (filename != null) {
-            return auditLogRepository.findByFilenameContaining(filename);
-        }else {
-            return auditLogRepository.findAll();
+            return ResponseEntity.ok(auditLogRepository.findByFileNameContaining(filename));
+        } else {
+            return ResponseEntity.ok(auditLogRepository.findAll());
         }
     }
 
+    /**
+     * ADMIN: Filter logs with pagination.
+     */
     @GetMapping("/filter-page")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public Page<AuditLog> getFilteredLogsPaged(
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Page<AuditLog>> getFilteredLogsPaged(
             @RequestParam(required = false) String action,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
-    ){
+    ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
-        if (action!= null){
-            return auditLogRepository.findByAction(action, pageable);
-        }
-        else {
-            return auditLogRepository.findAll(pageable);
+        if (action != null) {
+            return ResponseEntity.ok(auditLogRepository.findByAction(action, pageable));
+        } else {
+            return ResponseEntity.ok(auditLogRepository.findAll(pageable));
         }
     }
 }

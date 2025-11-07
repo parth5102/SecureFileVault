@@ -80,14 +80,14 @@ public class FileController {
     }
 
     // ✅ GET MY FILES
-    @GetMapping("/my-files")
-    public ResponseEntity<List<FileMetaData>> listMyFiles(Principal principal) {
-        List<FileMetaData> files = fileMetadataRepository.findByOwnerUsername(principal.getName());
-        return ResponseEntity.ok(files);
-    }
+        @GetMapping("/my-files")
+        public ResponseEntity<List<FileMetaData>> listMyFiles(Principal principal) {
+            List<FileMetaData> files = fileMetadataRepository.findByOwner(principal.getName());
+            return ResponseEntity.ok(files);
+        }
 
     // ✅ DELETE FILE
-    @DeleteMapping("/{key}")
+    @DeleteMapping("/delete/{key}")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     public ResponseEntity<String> deleteFile(@PathVariable String key, Principal principal) {
         Optional<FileMetaData> fileOptional = fileMetadataRepository.findByKey(key);

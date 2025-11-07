@@ -21,7 +21,8 @@ public class AuditLog {
     private String id;
 
     private String action;
-    private String username;
+    private String userName;
+    private String fileName;
     private String target;
     private String ip;
     private Instant at;

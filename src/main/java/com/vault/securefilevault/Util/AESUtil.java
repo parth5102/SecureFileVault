@@ -1,5 +1,9 @@
 package com.vault.securefilevault.Util;
 
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -7,20 +11,37 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 
 /**
- * AES-256-GCM with random 12-byte IV, tag 128 bits
+ * AES-256-GCM encryption utility.
+ * Works with both environment variable AES_KEY_32 and application.properties fallback.
  * Layout: [IV(12)] [CIPHERTEXT+TAG]
  */
+@Component
 public class AESUtil {
     private static final String ALG = "AES";
     private static final String TRANS = "AES/GCM/NoPadding";
     private static final int GCM_TAG_BITS = 128;
     private static final int IV_LEN = 12;
 
-    // DEMO ONLY: derive key from env var; in production use a proper KMS/Secrets Manager.
+    @Value("${AES_KEY_32:}")
+    private String propertyKey;
+
+    private static String staticKey;
+
+    @PostConstruct
+    public void init() {
+        // Priority: environment variable → application.properties
+        String envKey = System.getenv("AES_KEY_32");
+        staticKey = (envKey != null && envKey.length() == 32) ? envKey : propertyKey;
+
+        if (staticKey == null || staticKey.length() != 32) {
+            throw new IllegalStateException("AES_KEY_32 must be a 32-character (256-bit) key.");
+        }
+    }
+
     private static byte[] key() {
-        String env = System.getenv().getOrDefault("AES_KEY_32", "");
-        if (env.length() != 32) throw new IllegalStateException("AES_KEY_32 must be 32 chars (256-bit key)");
-        return env.getBytes();
+        if (staticKey == null || staticKey.length() != 32)
+            throw new IllegalStateException("AES_KEY_32 must be a 32-character (256-bit) key.");
+        return staticKey.getBytes();
     }
 
     public static byte[] encrypt(byte[] plain) throws Exception {
