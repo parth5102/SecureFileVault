@@ -24,7 +24,18 @@ export class DashboardComponent implements OnInit {
 
   loadFiles() {
     this.fileService.getMyFiles().subscribe({
-      next: (data) => this.files = data,
+      next: (data) => {
+        
+        this.files = data.map((file: any) => ({
+          id: file._id,
+          key:file.key,
+          filename: file.filename,
+          sizeBytes: file.sizeBytes,
+          contentType: file.contentType,
+          uploadedAt: file.uploadedAt,
+          owner: file.owner
+        }));
+      },
       error: (err) => console.error('Error loading files', err)
 
     });
@@ -35,8 +46,16 @@ export class DashboardComponent implements OnInit {
     this.loadFiles();
   }
 
-  onFileDeleted(fileId : number) {
-    this.files = this.files.filter(file => file.id !== fileId);
+  onFileDeleted(fileKey: string) {
+    this.fileService.deleteFile(fileKey).subscribe({
+      next: () => {
+        console.log(`File with key ${fileKey} deleted successfully.`);
+        this.files = this.files.filter(file => file.key !== fileKey);
+      },
+      error: (err) => {
+        console.error('Error deleting file:', err);
+      }
+    });
   }
 
   logout() {

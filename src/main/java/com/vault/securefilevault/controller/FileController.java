@@ -16,7 +16,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -31,11 +33,23 @@ public class FileController {
 
     // ✅ UPLOAD FILE
     @PostMapping("/upload")
-    public ResponseEntity<String> upload(@RequestParam("file") MultipartFile file, Principal principal) throws Exception {
+    public ResponseEntity<Map<String, String>> upload(@RequestParam("file") MultipartFile file,Principal principal) throws Exception {
+
         String username = principal.getName();
-        String result = s3Service.uploadFile(file, username);
-        auditLogService.log("UPLOAD", username, file.getOriginalFilename(), "File uploaded successfully");
-        return ResponseEntity.ok(result);
+        String key = s3Service.uploadFile(file, username);
+
+        auditLogService.log(
+                "UPLOAD",
+                username,
+                file.getOriginalFilename(),
+                "File uploaded successfully"
+        );
+
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "File uploaded successfully");
+        response.put("key", key);
+
+        return ResponseEntity.ok(response);
     }
 
     // ✅ DOWNLOAD FILE

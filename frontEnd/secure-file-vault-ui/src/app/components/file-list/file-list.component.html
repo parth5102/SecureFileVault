@@ -1,1 +1,32 @@
-<p>file-list works!</p>
+<div class="p-4">
+  <h2 class="text-lg font-semibold mb-3">📁 Your Uploaded Files</h2>
+
+  <div *ngIf="files.length === 0" class="text-gray-500">
+    No files uploaded yet.
+  </div>
+
+  <table *ngIf="files.length > 0" class="min-w-full bg-white shadow rounded-lg">
+    <thead>
+      <tr class="bg-gray-100 text-gray-700 text-left">
+        <th class="py-2 px-4">Filename</th>
+        <th class="py-2 px-4">Type</th>
+        <th class="py-2 px-4">Size</th>
+        <th class="py-2 px-4">Uploaded At</th>
+        <th class="py-2 px-4 text-center">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let file of files" class="border-b hover:bg-gray-50">
+        <td class="py-2 px-4">{{ file.filename }}</td>
+        <td class="py-2 px-4">{{ file.contentType }}</td>
+        <td class="py-2 px-4">{{ formatFileSize(file.sizeBytes) }}</td>
+        <td class="py-2 px-4">{{ file.uploadedAt | date:'short' }}</td>
+        <td class="py-2 px-4 text-center">
+          <button (click)="deleteFile(file.key)" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
+            Delete
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

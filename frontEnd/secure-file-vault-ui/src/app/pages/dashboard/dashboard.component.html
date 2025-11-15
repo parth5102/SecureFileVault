@@ -6,5 +6,7 @@
   <app-upload-form (fileUploaded)="loadFiles()"></app-upload-form>
 
   <!-- File List Section -->
-  <app-file-list [files]="files"></app-file-list>
+  <app-file-list 
+  [files]="files"
+  (fileDeleted)="onFileDeleted($event)"></app-file-list>
 </div>
